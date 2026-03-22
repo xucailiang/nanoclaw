@@ -364,7 +364,10 @@ async function startMessageLoop(): Promise<void> {
       );
 
       if (messages.length > 0) {
-        logger.info({ count: messages.length, jids: Object.keys(registeredGroups) }, 'New messages');
+        logger.info(
+          { count: messages.length, jids: Object.keys(registeredGroups) },
+          'New messages',
+        );
 
         // Advance the "seen" cursor for all messages immediately
         lastTimestamp = newTimestamp;
@@ -435,7 +438,10 @@ async function startMessageLoop(): Promise<void> {
               );
           } else {
             // No active container — enqueue for a new one
-            logger.info({ chatJid }, 'No active container, enqueuing message check');
+            logger.info(
+              { chatJid },
+              'No active container, enqueuing message check',
+            );
             queue.enqueueMessageCheck(chatJid);
           }
         }

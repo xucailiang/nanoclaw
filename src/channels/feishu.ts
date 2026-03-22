@@ -49,7 +49,7 @@ export class FeishuChannel implements Channel {
     // Start with timeout to detect connection issues
     const startPromise = this.wsClient.start({ eventDispatcher });
     const timeout = new Promise<void>((_, reject) =>
-      setTimeout(() => reject(new Error('WS start timeout')), 10000)
+      setTimeout(() => reject(new Error('WS start timeout')), 10000),
     );
 
     try {
