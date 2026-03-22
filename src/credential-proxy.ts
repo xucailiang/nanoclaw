@@ -79,11 +79,20 @@ export function startCredentialProxy(
           }
         }
 
+        // Concatenate base URL path with request path
+        // e.g., base: https://api.example.com/anthropic + req.url: /v1/messages
+        // results in: /anthropic/v1/messages
+        const basePath = upstreamUrl.pathname;
+        const upstreamPath =
+          basePath === '/' || basePath === ''
+            ? req.url
+            : `${basePath}${req.url}`;
+
         const upstream = makeRequest(
           {
             hostname: upstreamUrl.hostname,
             port: upstreamUrl.port || (isHttps ? 443 : 80),
-            path: req.url,
+            path: upstreamPath,
             method: req.method,
             headers,
           } as RequestOptions,

@@ -37,16 +37,29 @@ export class FeishuChannel implements Channel {
   }
 
   async connect(): Promise<void> {
-    const eventDispatcher = new lark.EventDispatcher({}).register({
+    const eventDispatcher = new lark.EventDispatcher({
+      logger: console,
+    }).register({
       'im.message.receive_v1': async (data) => {
+        logger.info({ channel: this.name, data }, 'Feishu message received!');
         await this.handleMessage(data);
       },
     });
 
-    this.wsClient.start({ eventDispatcher });
-    this.connected = true;
+    // Start with timeout to detect connection issues
+    const startPromise = this.wsClient.start({ eventDispatcher });
+    const timeout = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error('WS start timeout')), 10000)
+    );
 
-    logger.info({ channel: this.name }, 'Feishu WebSocket connected');
+    try {
+      await Promise.race([startPromise, timeout]);
+      logger.info({ channel: this.name }, 'Feishu WebSocket connected');
+    } catch (err) {
+      logger.error({ channel: this.name, err }, 'Feishu WS start failed');
+    }
+
+    this.connected = true;
   }
 
   private async handleMessage(data: any): Promise<void> {
@@ -75,18 +88,18 @@ export class FeishuChannel implements Channel {
 
       // Get sender info
       const senderId = sender?.sender_id?.user_id || 'unknown';
-      const senderName =
-        sender?.sender_id?.user_id || senderId;
+      const senderName = sender?.sender_id?.user_id || senderId;
 
       // Create timestamp from message.create_time (Unix timestamp in seconds)
       const timestamp = message.create_time
         ? new Date(parseInt(message.create_time) * 1000).toISOString()
         : new Date().toISOString();
 
-      // Notify about chat metadata FIRST (creates chat entry for foreign key constraint)
+      logger.info({ channel: this.name, chatJid }, 'Calling onChatMetadata');
       this.opts.onChatMetadata(chatJid, timestamp, undefined, 'feishu', true);
+      logger.info({ channel: this.name, chatJid }, 'onChatMetadata done');
 
-      // Call the onMessage callback
+      logger.info({ channel: this.name, chatJid }, 'Calling onMessage');
       this.opts.onMessage(chatJid, {
         id: message.message_id,
         chat_jid: chatJid,
@@ -97,8 +110,12 @@ export class FeishuChannel implements Channel {
         is_from_me: false,
         is_bot_message: false,
       });
+      logger.info({ channel: this.name, chatJid }, 'onMessage done');
     } catch (err) {
-      logger.error({ err, channel: this.name }, 'Error handling Feishu message');
+      logger.error(
+        { err, channel: this.name },
+        'Error handling Feishu message',
+      );
     }
   }
 
@@ -139,7 +156,10 @@ export class FeishuChannel implements Channel {
           },
         });
       } catch (err) {
-        logger.error({ err, channel: this.name, chatId }, 'Failed to send Feishu message');
+        logger.error(
+          { err, channel: this.name, chatId },
+          'Failed to send Feishu message',
+        );
         throw err;
       }
     }
