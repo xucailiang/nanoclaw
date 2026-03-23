@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx:*)",
+      "Bash(open -a Docker)",
+      "Bash(docker info:*)"
+    ]
+  }
+}

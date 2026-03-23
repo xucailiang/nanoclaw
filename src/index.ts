@@ -1,3 +1,6 @@
+// Load .env file before other imports
+import 'dotenv/config';
+
 import fs from 'fs';
 import path from 'path';
 
